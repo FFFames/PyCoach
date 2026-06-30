@@ -1,0 +1,10 @@
+node_modules
+.next
+.env*.local
+coverage
+dist
+*.log
+.DS_Store
+slides/rendered
+.vercel
+FDE Practical Assessment - Beyond Code Academy (1).pdf

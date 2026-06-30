@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { BKT,lowestMastery,updateMastery } from "@/lib/bkt";
+describe("Bayesian Knowledge Tracing",()=>{it("raises mastery after correct evidence",()=>expect(updateMastery(BKT.initial,true)).toBeGreaterThan(BKT.initial));it("lowers confidence after incorrect evidence before learning transition",()=>expect(updateMastery(.8,false)).toBeLessThan(.8));it("selects the weakest skill",()=>expect(lowestMastery({variables:.7,conditionals:.4,loops:.5,lists:.2,functions:.6})).toBe("lists"));});

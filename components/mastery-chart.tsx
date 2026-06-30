@@ -1,0 +1,2 @@
+import { Mastery } from "@/lib/types";
+export function MasteryChart({mastery}:{mastery:Mastery}){return <div className="space-y-5">{Object.entries(mastery).map(([skill,value])=><div key={skill}><div className="mb-2 flex justify-between text-sm font-bold"><span className="capitalize">{skill}</span><span>{Math.round(value*100)}%</span></div><div className="h-2.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-moss" style={{width:`${value*100}%`}}/></div></div>)}</div>}

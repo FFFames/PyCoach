@@ -1,0 +1,2 @@
+import { describe,expect,it } from "vitest";import { gradeCode } from "@/lib/grader";import { assignments } from "@/lib/data";
+describe("fallback grader",()=>{it("accepts a structurally valid loop solution",async()=>{const a=assignments.find(x=>x.id==="loops")!;const result=await gradeCode("n=int(input())\ntotal=0\nfor i in range(1,n+1): total += i\nprint(total)",a);expect(result.grade).toBe(100);expect(result.mode).toBe("fallback")});it("blocks dangerous APIs",async()=>{await expect(gradeCode("import os\nprint(os.listdir())",assignments[0])).rejects.toThrow("blocks")});});
