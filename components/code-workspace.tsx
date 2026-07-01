@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ArrowRight, CheckCircle2, Loader2, Play, RotateCcw, XCircle } from "lucide-react";
 import type { Assignment, Skill } from "@/lib/types";
 import type { GradeResult } from "@/lib/grader";
+import type { RecommendationMode } from "@/lib/recommendation";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -20,6 +21,8 @@ type GradeResponse = GradeResult & {
 
 type RecommendationResponse = {
   reason: string;
+  mode: RecommendationMode;
+  skill?: Skill;
   assignment?: Assignment;
 };
 
