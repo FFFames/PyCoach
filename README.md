@@ -10,15 +10,20 @@ PyCoach is a deployable MVP for practicing Python in the browser. Students work 
 
 ## Screenshots
 
-Screenshot files are not committed under `docs/screenshots/` yet. Add them later using paths such as:
 
-```md
-![Student dashboard](docs/screenshots/student-dashboard.png)
-![Assignment grading](docs/screenshots/assignment-grading.png)
-![Mastery and recommendation](docs/screenshots/mastery-recommendation.png)
-![Instructor dashboard](docs/screenshots/instructor-dashboard.png)
-![Student detail view](docs/screenshots/student-detail-view.png)
-```
+
+<img width="1402" height="905" alt="2569-07-02_00-54-07" src="https://github.com/user-attachments/assets/9ddd9846-69dd-4da3-8068-fc9fa3ce39a6" />
+<img width="1333" height="641" alt="image" src="https://github.com/user-attachments/assets/f6fae681-106c-439f-b925-84a7c052ae8e" />
+
+<img width="1425" height="931" alt="image" src="https://github.com/user-attachments/assets/a6c04763-3890-4f53-baf7-820c577afc6b" />
+<img width="1302" height="703" alt="2569-07-02_01-02-12" src="https://github.com/user-attachments/assets/0f529cd2-b920-40a0-abc7-75892aa55f11" />
+<img width="1292" height="934" alt="image" src="https://github.com/user-attachments/assets/4164ae14-d5f0-45b5-bc0e-b1c5ee5ae280" />
+
+<img width="1312" height="791" alt="image" src="https://github.com/user-attachments/assets/3bf0a590-ca02-4e9d-8be0-e0500686a771" />
+
+<img width="1297" height="933" alt="image" src="https://github.com/user-attachments/assets/3d237b0e-f5ca-4c2f-b6fa-98e163bba5d2" />
+
+
 
 ## What is included
 
