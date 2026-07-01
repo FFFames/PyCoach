@@ -1,5 +1,7 @@
-import type { Assignment, Mastery, Skill, Submission } from "@/lib/types";
+import type { Assignment, GradingAssignment, Mastery, Skill, Submission } from "@/lib/types";
 import { BKT } from "@/lib/bkt";
+
+export const PUBLIC_ASSIGNMENT_SELECT = "id,title,description,starter_code,difficulty,skill,tests,created_at";
 
 export function mapAssignment(row: Record<string, unknown>): Assignment {
   return {
@@ -10,6 +12,15 @@ export function mapAssignment(row: Record<string, unknown>): Assignment {
     difficulty: row.difficulty as Assignment["difficulty"],
     skill: row.skill as Skill,
     tests: (row.tests ?? []) as Assignment["tests"]
+  };
+}
+
+export function mapGradingAssignment(row: Record<string, unknown>): GradingAssignment {
+  return {
+    ...mapAssignment(row),
+    rubric: String(row.rubric ?? ""),
+    referenceSolution: String(row.reference_solution ?? ""),
+    hiddenTests: (row.hidden_tests ?? []) as GradingAssignment["hiddenTests"]
   };
 }
 

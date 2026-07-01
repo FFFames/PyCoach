@@ -1,4 +1,4 @@
-import type { Assignment } from "./types";
+import type { GradingAssignment } from "./types";
 
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 const DEFAULT_MODEL = "llama-3.1-8b-instant";
@@ -28,7 +28,7 @@ export class GraderError extends Error {
 
 type GroqPayload = Omit<GradeResult, "mode" | "passed"> & { passed?: unknown };
 
-export async function gradeCode(code: string, assignment: Assignment): Promise<GradeResult> {
+export async function gradeCode(code: string, assignment: GradingAssignment): Promise<GradeResult> {
   validateCode(code);
   const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) {
@@ -89,15 +89,19 @@ function validateCode(code: string) {
   }
 }
 
-function buildMessages(code: string, assignment: Assignment) {
+function buildMessages(code: string, assignment: GradingAssignment) {
   return [
     {
       role: "system",
       content: [
         "You grade beginner Python submissions.",
-        "Use the assignment tests as the objective reference and be strict about incorrect logic.",
-        "If the code would fail any provided test, assign a grade below 80.",
+        "Use the public tests, hidden tests, and rubric as the primary grading basis.",
+        "Compare the current student code's behavior against every expected output.",
+        "The reference solution only clarifies the intended behavior; never require identical code or a specific implementation unless the rubric explicitly requires it.",
+        "Award 100 only when the current submission satisfies every required test and the complete rubric.",
+        "If the current submission would fail any required test, assign a grade below 80.",
         "Grade unrelated, empty, incorrectly hardcoded, unsafe, or non-solving code very low.",
+        "Do not invent mistakes. Every issue in feedback or mistakes must be demonstrably present in the current submitted code.",
         "Do not provide full solution code. Give a useful hint without revealing the complete answer.",
         "Do not reveal hidden chain-of-thought. reasoning_summary must be a short, safe outcome summary.",
         "Return JSON only with exactly: grade, passed, feedback, mistakes, hint, reasoning_summary.",
@@ -112,7 +116,10 @@ function buildMessages(code: string, assignment: Assignment) {
           description: assignment.description,
           skill: assignment.skill,
           starter_code: assignment.starterCode,
-          tests: assignment.tests
+          public_tests: assignment.tests,
+          hidden_tests: assignment.hiddenTests,
+          rubric: assignment.rubric,
+          reference_solution: assignment.referenceSolution
         },
         student_code: code
       })

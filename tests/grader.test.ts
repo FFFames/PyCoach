@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { formatStoredFeedback, gradeCode } from "@/lib/grader";
 import { assignments } from "@/lib/data";
+import { mapAssignment } from "@/lib/supabase/mappers";
 
 const assignment = assignments.find((item) => item.id === "loops")!;
 
@@ -10,6 +11,33 @@ afterEach(() => {
 });
 
 describe("Groq grader", () => {
+  it("provides complete grading context for every assignment", () => {
+    for (const item of assignments) {
+      expect(item.tests.length + item.hiddenTests.length).toBeGreaterThanOrEqual(4);
+      expect(item.tests.length + item.hiddenTests.length).toBeLessThanOrEqual(6);
+      expect(item.rubric).not.toBe("");
+      expect(item.referenceSolution).not.toBe("");
+    }
+  });
+
+  it("does not include grading-only fields in public assignment mapping", () => {
+    const publicAssignment = mapAssignment({
+      id: assignment.id,
+      title: assignment.title,
+      description: assignment.description,
+      starter_code: assignment.starterCode,
+      difficulty: assignment.difficulty,
+      skill: assignment.skill,
+      tests: assignment.tests,
+      hidden_tests: assignment.hiddenTests,
+      rubric: assignment.rubric,
+      reference_solution: assignment.referenceSolution
+    });
+    expect(publicAssignment).not.toHaveProperty("hiddenTests");
+    expect(publicAssignment).not.toHaveProperty("rubric");
+    expect(publicAssignment).not.toHaveProperty("referenceSolution");
+  });
+
   it("fails clearly when GROQ_API_KEY is missing", async () => {
     vi.stubEnv("GROQ_API_KEY", "");
     await expect(gradeCode("print(1)", assignment)).rejects.toMatchObject({
@@ -39,8 +67,12 @@ describe("Groq grader", () => {
     const request = JSON.parse(fetchMock.mock.calls[0][1].body as string);
     expect(request.model).toBe("llama-3.1-8b-instant");
     expect(request.messages[1].content).toContain('"starter_code"');
-    expect(request.messages[1].content).toContain('"tests"');
+    expect(request.messages[1].content).toContain('"public_tests"');
+    expect(request.messages[1].content).toContain('"hidden_tests"');
+    expect(request.messages[1].content).toContain('"rubric"');
+    expect(request.messages[1].content).toContain('"reference_solution"');
     expect(request.messages[1].content).toContain('"student_code"');
+    expect(request.messages[0].content).toContain("Do not invent mistakes");
   });
 
   it("rejects invalid model JSON instead of silently passing", async () => {

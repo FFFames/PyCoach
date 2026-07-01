@@ -17,7 +17,12 @@ create table public.assignments (
   difficulty text not null check (difficulty in ('Beginner','Intermediate')),
   skill text not null check (skill in ('variables','conditionals','loops','lists','functions')),
   tests jsonb not null default '[]'::jsonb,
-  created_at timestamptz not null default now()
+  rubric text not null default '',
+  reference_solution text not null default '',
+  hidden_tests jsonb not null default '[]'::jsonb,
+  created_at timestamptz not null default now(),
+  constraint assignments_tests_are_arrays
+    check (jsonb_typeof(tests) = 'array' and jsonb_typeof(hidden_tests) = 'array')
 );
 
 create table public.submissions (
@@ -48,3 +53,6 @@ create policy "students read own profile" on public.profiles for select to authe
 create policy "students insert own submissions" on public.submissions for insert to authenticated with check (student_id=auth.uid());
 create policy "submissions visible to owner or instructor" on public.submissions for select to authenticated using (student_id=auth.uid() or exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='instructor'));
 create policy "mastery visible to owner or instructor" on public.student_mastery for select to authenticated using (student_id=auth.uid() or exists(select 1 from public.profiles p where p.id=auth.uid() and p.role='instructor'));
+
+grant select (id, title, description, starter_code, difficulty, skill, tests, created_at)
+  on public.assignments to authenticated;
