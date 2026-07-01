@@ -75,7 +75,9 @@ Each assignment maps to one knowledge component. For each student-skill pair, BK
 - guess `P(G) = 0.20`
 - slip `P(S) = 0.10`
 
-The recommendation endpoint selects an unfinished assignment mapped to the lowest-mastery skill and explains the reason. BKT is a good MVP choice because it is interpretable, works from short interaction sequences, and does not pretend that this small system has enough data to train a deep model.
+The `0.30` initial value is an internal prior, not earned mastery. Until a student submits work for a skill, the dashboard labels it **Not attempted** and hides the percentage so the prior is not misleading. After the first submission, the UI shows the actual BKT estimate.
+
+The recommendation endpoint selects an assignment mapped to the lowest-mastery skill and explains the reason. After grading, the result panel shows the updated mastery and next action immediately: scores below 80 recommend retrying the same assignment, while passing work links to the weakest-skill recommendation. BKT is a good MVP choice because it is interpretable, works from short interaction sequences, and does not pretend that this small system has enough data to train a deep model.
 
 ### Data to collect
 
