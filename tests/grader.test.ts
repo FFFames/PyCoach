@@ -108,7 +108,7 @@ describe("Groq grader", () => {
       .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: validResult } }] }), { status: 200 }));
     vi.stubGlobal("fetch", fetchMock);
 
-    const result = await gradeCode('print("15"', assignment);
+    const result = await gradeCode('print("15")', assignment);
     expect(result).toMatchObject({ grade: 10, passed: false });
     expect(fetchMock).toHaveBeenCalledTimes(2);
     const retryRequest = JSON.parse(fetchMock.mock.calls[1][1].body as string);
@@ -120,6 +120,20 @@ describe("Groq grader", () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     await expect(gradeCode("import os\nprint(os.listdir())", assignment)).rejects.toThrow("blocks");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['bill = float(input())\npeople = int(input())\nprint(f"{bill / people:.2f}"', 'missing closing ")"'],
+    ['bill = float(input())\npeople = int(input())\nprint(f"{bill / people:.2f})', "unterminated string"]
+  ])("rejects structurally invalid Python before calling Groq", async (code, expectedMessage) => {
+    vi.stubEnv("GROQ_API_KEY", "test-key");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(gradeCode(code, assignment)).rejects.toMatchObject({
+      message: expect.stringContaining(expectedMessage),
+      status: 400
+    });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });

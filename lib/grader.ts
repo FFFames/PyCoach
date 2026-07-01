@@ -112,6 +112,89 @@ function validateCode(code: string) {
       400
     );
   }
+  const syntaxError = findStructuralSyntaxError(code);
+  if (syntaxError) throw new GraderError(syntaxError, 400);
+}
+
+function findStructuralSyntaxError(code: string): string | null {
+  const stack: Array<{ character: "(" | "[" | "{"; line: number }> = [];
+  const pairs = { ")": "(", "]": "[", "}": "{" } as const;
+  let quote: "'" | "\"" | "'''" | "\"\"\"" | null = null;
+  let quoteLine = 1;
+  let escaped = false;
+  let comment = false;
+  let line = 1;
+
+  for (let index = 0; index < code.length; index += 1) {
+    const character = code[index];
+    if (comment) {
+      if (character === "\n") {
+        comment = false;
+        line += 1;
+      }
+      continue;
+    }
+    if (quote) {
+      if (quote.length === 3 && code.slice(index, index + 3) === quote) {
+        quote = null;
+        index += 2;
+        continue;
+      }
+      if (quote.length === 1) {
+        if (escaped) {
+          escaped = false;
+          if (character === "\n") line += 1;
+          continue;
+        }
+        if (character === "\\") {
+          escaped = true;
+          continue;
+        }
+        if (character === quote) {
+          quote = null;
+          continue;
+        }
+        if (character === "\n") return `Syntax error: unterminated string on line ${quoteLine}.`;
+      } else if (character === "\n") {
+        line += 1;
+      }
+      continue;
+    }
+    if (character === "\n") {
+      line += 1;
+      continue;
+    }
+    if (character === "#") {
+      comment = true;
+      continue;
+    }
+    if (character === "'" || character === "\"") {
+      const triple = character.repeat(3) as "'''" | "\"\"\"";
+      quote = code.slice(index, index + 3) === triple ? triple : character;
+      quoteLine = line;
+      if (quote.length === 3) index += 2;
+      continue;
+    }
+    if (character === "(" || character === "[" || character === "{") {
+      stack.push({ character, line });
+      continue;
+    }
+    if (character === ")" || character === "]" || character === "}") {
+      const opener = stack.pop();
+      if (!opener) return `Syntax error: unexpected "${character}" on line ${line}.`;
+      if (opener.character !== pairs[character]) {
+        return `Syntax error: "${opener.character}" on line ${opener.line} is closed by "${character}" on line ${line}.`;
+      }
+    }
+  }
+
+  if (quote) return `Syntax error: unterminated string on line ${quoteLine}.`;
+  const opener = stack.at(-1);
+  if (opener) {
+    const closing = opener.character === "(" ? ")" : opener.character === "[" ? "]" : "}";
+    return `Syntax error: missing closing "${closing}" for "${opener.character}" on line ${opener.line}.`;
+  }
+  return null;
 }
 
 function buildMessages(code: string, assignment: GradingAssignment): GroqMessage[] {
