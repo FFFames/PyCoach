@@ -2,6 +2,24 @@
 
 PyCoach is a deployable MVP for practicing Python in the browser. Students work through five focused exercises, submit code for immediate grading and feedback, see a mastery estimate per skill, and receive an evidence-aware recommendation. Instructors get a student-level progress overview with drill-down submission history.
 
+## Demo
+
+- Live app: [https://pycoach.vercel.app](https://pycoach.vercel.app)
+- Demo video: `<add demo video URL>`
+- Repository: [https://github.com/FFFames/PyCoach](https://github.com/FFFames/PyCoach)
+
+## Screenshots
+
+Screenshot files are not committed under `docs/screenshots/` yet. Add them later using paths such as:
+
+```md
+![Student dashboard](docs/screenshots/student-dashboard.png)
+![Assignment grading](docs/screenshots/assignment-grading.png)
+![Mastery and recommendation](docs/screenshots/mastery-recommendation.png)
+![Instructor dashboard](docs/screenshots/instructor-dashboard.png)
+![Student detail view](docs/screenshots/student-detail-view.png)
+```
+
 ## What is included
 
 - Real Supabase-authenticated demo accounts for student and instructor exploration
@@ -59,6 +77,24 @@ Supabase Auth + PostgreSQL
 
 The deployed assessment is connected to a hosted Supabase project. For a fresh environment, run the migrations in [`supabase/migrations`](supabase/migrations), apply [`supabase/seed.sql`](supabase/seed.sql), then provide the values in [`.env.example`](.env.example). The schema includes role-aware row-level security: students can submit and read their own records; instructors can monitor the class. Returning users sign in with Supabase email/password auth, a signup trigger creates each new student profile plus the five initial mastery rows, and the demo buttons log into the seeded Maya student and instructor accounts. Public signups are always assigned the student role; instructor access must be granted administratively.
 
+## Project structure
+
+```text
+app/          Next.js App Router pages and API route handlers
+components/   Shared UI components
+lib/          BKT, grading, recommendation, and Supabase mapping logic
+supabase/     Schema, migrations, and seed data
+docs/         Assessment documentation and screenshots
+```
+
+## Key design decisions
+
+- Next.js App Router keeps the UI, authenticated pages, and server-side grading endpoints in one deployable codebase with straightforward route-level ownership.
+- Supabase provides managed Auth, PostgreSQL, and row-level security, which keeps the MVP focused on learning and grading flows instead of custom account infrastructure.
+- Groq LLM grading matches the assessment allowance for LLM-based auto-grading and makes it feasible to ship structured feedback within a short MVP timeline.
+- BKT is used instead of Deep Knowledge Tracing because this project has a tiny interaction dataset, short learning sequences, and a strong need for interpretable mastery updates.
+- LLM-only grading is acceptable for the MVP, but production should combine deterministic sandbox execution with LLM explanations so scoring is verifiable and feedback remains helpful.
+
 ## Auto-grading approach
 
 `POST /api/grade` validates the request and rejects empty, oversized, and obviously dangerous submissions before sending the assignment, public and hidden tests, assignment-specific rubric, backend-only reference solution, and student code to Groq. Tests and rubric are the primary grading basis; the reference solution clarifies intended behavior without requiring students to write identical code. The model returns a strict JSON grade, pass/fail decision, feedback, concrete mistakes, a non-revealing hint, and a short reasoning summary. The server validates every field and derives `passed` from `grade >= 80`; invalid model output is rejected and never silently becomes a passing grade.
@@ -82,6 +118,14 @@ The `0.30` initial value is an internal prior, not earned mastery. Until a stude
 
 Recommendations use evidence-aware progression. A new student starts with Variables without treating the `0.30` prior as observed mastery. After at least one attempt, the system recommends the next unattempted concept in order—variables, conditionals, loops, lists, functions. Only after every skill has submission evidence does it recommend the lowest BKT mastery. After grading, scores below 80 still recommend retrying the same assignment; passing work follows this progression. BKT is a good MVP choice because it is interpretable, works from short interaction sequences, and does not pretend that this small system has enough data to train a deep model.
 
+## Why Bayesian Knowledge Tracing?
+
+- The current project has a very small dataset, so a lightweight probabilistic model is more credible than a deep sequence model.
+- BKT is interpretable: each update can be explained in terms of prior mastery, observed correctness, guess, slip, and learning transition.
+- It works well with short interaction sequences, which fits a five-assignment MVP better than methods that expect long histories.
+- It is easier to validate and discuss in an interview setting than Deep Knowledge Tracing.
+- DKT is a strong research direction, but it generally needs much larger sequential learning datasets to justify training and tuning.
+
 ### Data to collect
 
 For every learning opportunity, collect: anonymized student ID; assignment and skill IDs; submitted code; correctness and per-test outcomes; attempt number; timestamps; response time; hint or feedback exposure; resubmission interval; assignment difficulty; and the mastery estimate before and after the attempt. In production, parameters should be fitted and calibrated on held-out sequences, segmented only when there is enough data, and monitored for systematic error across learner groups. Raw code and identifiers need retention controls and should not be used to train models without an explicit policy.
@@ -102,13 +146,29 @@ Corbett and Anderson establish the classic latent mastery model. Pardos and Heff
 | POST | `/api/grade` | Grade a submission and return updated mastery |
 | GET | `/api/mastery` | Return the student's skill probabilities |
 | GET | `/api/recommendations` | Return the lowest-mastery next exercise |
-| GET | `/api/instructor/students` | Return instructor-only student progress summaries |
+| GET | `/api/instructor/students` | Return instructor-only student-level progress summaries |
 | GET | `/api/instructor/students/[id]` | Return one student's mastery and submission history |
-| GET | `/api/instructor/submissions` | Return the instructor submission stream |
+| GET | `/api/instructor/submissions` | Return the instructor submission stream for detailed or legacy views |
+
+## Instructor dashboard
+
+- `/instructor` shows one row per student rather than one row per submission.
+- Each row includes attempts, average grade, latest grade, completed assignments, skills attempted, and last submitted time.
+- Instructors can drill into `/instructor/students/[id]` to inspect that student's mastery snapshot and full submission history.
 
 ## Deployment
 
 Import this repository into Vercel, set the Supabase variables and required `GROQ_API_KEY`, then deploy. `GROQ_MODEL` is optional and defaults to `llama-3.1-8b-instant`. Grading intentionally returns HTTP 500 when the required Groq key is not configured.
+
+## Future work
+
+- Deterministic sandbox execution paired with LLM explanations and coaching feedback
+- Per-test execution results for students and instructors
+- Multi-skill assignment tagging instead of one-skill-per-assignment mapping
+- Adaptive difficulty and assignment sequencing beyond fixed concept order
+- Fitted and recalibrated BKT parameters from real learner data
+- Richer instructor analytics for cohorts, trends, and intervention points
+- More complete account management, including invites, password reset, and profile settings
 
 ## Current MVP limitations
 
