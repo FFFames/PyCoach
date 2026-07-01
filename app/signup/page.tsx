@@ -10,7 +10,7 @@ export default function Signup() {
       <h1 className="mt-2 text-4xl font-black tracking-tight">Create your account.</h1>
       <p className="mt-3 leading-7 text-slate-600">Your progress, submissions, and mastery estimates will be private to your account.</p>
       <SignupForm/>
-      <p className="mt-6 text-center text-sm text-slate-600">Already have an account? <Link href="/login" className="font-black text-moss hover:text-clay">Sign in</Link></p>
+      <p className="mt-6 text-center text-sm text-slate-600">Already have an account or want demo access? <Link href="/login" className="font-black text-moss hover:text-clay">Go to login</Link></p>
     </div>
   </main>;
 }
