@@ -4,3 +4,5 @@ export type Assignment = {id:string;title:string;description:string;starterCode:
 export type GradingAssignment = Assignment & {rubric:string;referenceSolution:string;hiddenTests:AssignmentTest[]};
 export type Submission = {id:string;studentId:string;studentName:string;assignmentId:string;assignmentTitle:string;skill:Skill;grade:number;feedback:string;submittedAt:string};
 export type Mastery = Record<Skill, number>;
+export type InstructorStudentSummary = {id:string;name:string;email:string|null;totalAttempts:number;averageGrade:number;latestGrade:number|null;completedAssignments:number;skillsAttempted:number;lastSubmittedAt:string|null};
+export type InstructorStudentDetail = {student:InstructorStudentSummary;mastery:Mastery;attemptedSkills:Skill[];submissions:Submission[]};

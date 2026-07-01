@@ -1,6 +1,6 @@
 # PyCoach
 
-PyCoach is a deployable MVP for practicing Python in the browser. Students work through five focused exercises, submit code for immediate grading and feedback, see a mastery estimate per skill, and receive a recommendation for the skill with the lowest estimated mastery. Instructors get a compact stream of student submissions and grades.
+PyCoach is a deployable MVP for practicing Python in the browser. Students work through five focused exercises, submit code for immediate grading and feedback, see a mastery estimate per skill, and receive an evidence-aware recommendation. Instructors get a student-level progress overview with drill-down submission history.
 
 ## What is included
 
@@ -102,6 +102,8 @@ Corbett and Anderson establish the classic latent mastery model. Pardos and Heff
 | POST | `/api/grade` | Grade a submission and return updated mastery |
 | GET | `/api/mastery` | Return the student's skill probabilities |
 | GET | `/api/recommendations` | Return the lowest-mastery next exercise |
+| GET | `/api/instructor/students` | Return instructor-only student progress summaries |
+| GET | `/api/instructor/students/[id]` | Return one student's mastery and submission history |
 | GET | `/api/instructor/submissions` | Return the instructor submission stream |
 
 ## Deployment
