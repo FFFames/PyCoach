@@ -10,7 +10,7 @@ PyCoach is a deployable MVP for practicing Python in the browser. Students work 
 - Five documented route handlers under `/api`
 - PostgreSQL schema, seed data, foreign keys, checks, and row-level security policies
 - Bayesian Knowledge Tracing (BKT) proof of concept and mastery-based recommendations
-- Unit tests for BKT and grader safety behavior
+- Unit tests for BKT, Groq response validation, and grader safety behavior
 - Responsive UI verified at desktop and 390px mobile width
 
 ## Run locally
@@ -32,6 +32,16 @@ pnpm test
 pnpm build
 ```
 
+## Environment variables
+
+| Variable | Required | Purpose |
+|---|---:|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Browser-safe Supabase publishable key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Server-only persistence key; never expose to the browser |
+| `GROQ_API_KEY` | Yes | Server-only credential for LLM grading |
+| `GROQ_MODEL` | No | Groq model override; defaults to `llama-3.1-8b-instant` |
+
 ## Architecture
 
 The application is a single Next.js App Router repository. React pages and components call Next.js route handlers; the route handlers own grading and mastery updates; Supabase PostgreSQL stores users, assignments, submissions, grades, and mastery.
@@ -40,8 +50,8 @@ The application is a single Next.js App Router repository. React pages and compo
 Browser (Next.js + Monaco)
           │
           ▼
-Next.js Route Handlers ─────► Isolated Python runner
-          │                    (CODE_RUNNER_URL)
+Next.js Route Handlers ─────► Groq LLM grading
+          │
           ▼
 Supabase Auth + PostgreSQL
 ```
@@ -50,11 +60,11 @@ The deployed assessment is connected to a hosted Supabase project. For a fresh e
 
 ## Auto-grading approach
 
-`POST /api/grade` validates the request and rejects oversized submissions plus common filesystem, process, network, and dynamic-execution APIs. When `CODE_RUNNER_URL` is configured, it sends the code and hidden tests to that isolated runner with an eight-second request timeout.
+`POST /api/grade` validates the request and rejects empty, oversized, and obviously dangerous submissions before sending the assignment, reference tests, and student code to Groq. The model returns a strict JSON grade, pass/fail decision, feedback, concrete mistakes, a non-revealing hint, and a short reasoning summary. The server validates every field and derives `passed` from `grade >= 80`; invalid model output is rejected and never silently becomes a passing grade.
 
-Without a runner, Vercel uses a clearly labelled structural fallback. It checks whether the submission contains the core constructs required by the exercise and returns immediate formative feedback. This mode is intentionally conservative and is **demo-only**: it does not execute Python, cannot prove semantic correctness, and can be fooled by equivalent or adversarial source text.
+Groq LLM grading is the MVP's primary and required grader. This follows the assessment's explicit option to use an LLM provider for automated grading and intelligent feedback. If `GROQ_API_KEY` is absent, grading fails clearly instead of falling back to regex checks.
 
-Running arbitrary student code in the Next.js/Vercel process would be unsafe. A production deployment should use short-lived, network-disabled containers or microVMs with CPU, memory, wall-clock, process, and output limits—for example E2B or a Firecracker-backed runner. The worker should receive only submission code and tests, discard the environment after execution, and return normalized test results. Grading should be rate-limited, audited, and separated from the application database credentials.
+The Vercel application does not execute arbitrary Python. LLM grading is useful for an MVP but remains probabilistic and can occasionally misjudge semantics. A production upgrade should be hybrid: execute tests deterministically in short-lived, network-disabled containers or microVMs such as E2B or Firecracker, then use the LLM only to explain the verified results and provide personalized guidance.
 
 ## Knowledge tracing and personalization
 
@@ -91,11 +101,11 @@ Corbett and Anderson establish the classic latent mastery model. Pardos and Heff
 
 ## Deployment
 
-Import this repository into Vercel, set the Supabase variables and optional `CODE_RUNNER_URL`, then deploy. Vercel can run the app and fallback grader as-is. A semantic Python grader requires the external isolated runner described above.
+Import this repository into Vercel, set the Supabase variables and required `GROQ_API_KEY`, then deploy. `GROQ_MODEL` is optional and defaults to `llama-3.1-8b-instant`. Grading intentionally returns HTTP 500 when the required Groq key is not configured.
 
 ## Current MVP limitations
 
 - The assessment exposes two fixed demo accounts; production would add invitation, password reset, and account-management flows.
-- The fallback grader is structural, not semantic.
+- LLM grading is probabilistic; production should combine deterministic sandbox tests with LLM explanations.
 - BKT parameters are expert defaults, not fitted to platform data.
 - One skill is mapped to each assignment; production content may require multi-skill tagging and prerequisite constraints.

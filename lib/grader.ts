@@ -1,32 +1,152 @@
-import { Assignment } from "./types";
+import type { Assignment } from "./types";
 
-type TestResult={passed:boolean;input:string;expected:string;actual:string};
-export type GradeResult={grade:number;feedback:string;results:TestResult[];mode:"remote"|"fallback"};
+const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
+const DEFAULT_MODEL = "llama-3.1-8b-instant";
+const MAX_CODE_LENGTH = 10_000;
+const FORBIDDEN = [
+  /\bimport\s+(os|subprocess|socket|pathlib|shutil)\b/,
+  /\bfrom\s+(os|subprocess|socket|pathlib|shutil)\b/,
+  /\b(eval|exec|open|compile|__import__)\s*\(/
+];
 
-const FORBIDDEN = [/\bimport\s+(os|subprocess|socket|pathlib|shutil)\b/,/\bfrom\s+(os|subprocess|socket|pathlib|shutil)\b/,/\b(eval|exec|open|compile|__import__)\s*\(/];
+export type GradeResult = {
+  grade: number;
+  passed: boolean;
+  feedback: string;
+  mistakes: string[];
+  hint: string;
+  reasoning_summary: string;
+  mode: "groq";
+};
 
-export async function gradeCode(code:string,assignment:Assignment):Promise<GradeResult>{
- if(!code.trim()) throw new Error("Code cannot be empty.");
- if(code.length>10000) throw new Error("Code is too long.");
- if(FORBIDDEN.some(pattern=>pattern.test(code))) throw new Error("This demo blocks filesystem, process, network, and dynamic execution APIs.");
- const endpoint=process.env.CODE_RUNNER_URL;
- if(endpoint){
-  const response=await fetch(endpoint,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({language:"python",code,tests:assignment.tests}),signal:AbortSignal.timeout(8000)});
-  if(!response.ok) throw new Error("The code runner could not grade this submission.");
-  return {...await response.json(),mode:"remote"};
- }
- return fallbackGrade(code,assignment);
+export class GraderError extends Error {
+  constructor(message: string, public readonly status: number) {
+    super(message);
+    this.name = "GraderError";
+  }
 }
 
-function fallbackGrade(code:string,assignment:Assignment):GradeResult{
- const checks:Record<string,()=>boolean>={
-  variables:()=>/input\s*\(/.test(code)&&/(\/|round\s*\(|\.2f)/.test(code)&&/print\s*\(/.test(code),
-  conditionals:()=>/\bif\b/.test(code)&&/\belif\b/.test(code)&&/\belse\b/.test(code)&&/print\s*\(/.test(code),
-  loops:()=>/\b(for|while)\b/.test(code)&&/range\s*\(/.test(code)&&/print\s*\(/.test(code),
-  lists:()=>/(list|split)\s*\(/.test(code)&&/(sum\s*\(|for\b)/.test(code)&&/print\s*\(/.test(code),
-  functions:()=>/def\s+is_palindrome\s*\(/.test(code)&&/(\[::\s*-1\]|reversed\s*\()/.test(code)&&/return\b/.test(code)
- };
- const passed=checks[assignment.skill]?.()??false;
- const results=assignment.tests.map(test=>({passed,input:test.input,expected:test.expected,actual:passed?test.expected:"Not executed in fallback mode"}));
- return {grade:passed?100:0,feedback:passed?"Your solution matches the required structure. Connect a sandbox runner for execution-based verification.":"Your code is missing part of the expected solution structure. Review the prompt and try again.",results,mode:"fallback"};
+type GroqPayload = Omit<GradeResult, "mode" | "passed"> & { passed?: unknown };
+
+export async function gradeCode(code: string, assignment: Assignment): Promise<GradeResult> {
+  validateCode(code);
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) {
+    throw new GraderError(
+      "GROQ_API_KEY is not configured. LLM grading is required for this MVP.",
+      500
+    );
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(GROQ_ENDPOINT, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${apiKey}`,
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        model: process.env.GROQ_MODEL || DEFAULT_MODEL,
+        temperature: 0,
+        max_completion_tokens: 700,
+        response_format: { type: "json_object" },
+        messages: buildMessages(code, assignment)
+      }),
+      signal: AbortSignal.timeout(12_000)
+    });
+  } catch {
+    throw new GraderError("The LLM grader is temporarily unavailable. Please try again.", 502);
+  }
+
+  if (!response.ok) {
+    throw new GraderError("The LLM grader could not evaluate this submission.", 502);
+  }
+
+  const completion = await response.json() as {
+    choices?: Array<{ message?: { content?: string } }>;
+  };
+  const content = completion.choices?.[0]?.message?.content;
+  if (!content) throw new GraderError("The LLM grader returned an empty response.", 502);
+  return parseGrade(content);
+}
+
+export function formatStoredFeedback(result: GradeResult): string {
+  const mistakes = result.mistakes.length
+    ? `Mistakes: ${result.mistakes.join("; ")}`
+    : "Mistakes: none identified";
+  return [result.feedback, mistakes, `Hint: ${result.hint}`].join("\n");
+}
+
+function validateCode(code: string) {
+  if (!code.trim()) throw new GraderError("Code cannot be empty.", 400);
+  if (code.length > MAX_CODE_LENGTH) throw new GraderError("Code is too long.", 400);
+  if (FORBIDDEN.some((pattern) => pattern.test(code))) {
+    throw new GraderError(
+      "This demo blocks filesystem, process, network, and dynamic execution APIs.",
+      400
+    );
+  }
+}
+
+function buildMessages(code: string, assignment: Assignment) {
+  return [
+    {
+      role: "system",
+      content: [
+        "You grade beginner Python submissions.",
+        "Use the assignment tests as the objective reference and be strict about incorrect logic.",
+        "If the code would fail any provided test, assign a grade below 80.",
+        "Grade unrelated, empty, incorrectly hardcoded, unsafe, or non-solving code very low.",
+        "Do not provide full solution code. Give a useful hint without revealing the complete answer.",
+        "Do not reveal hidden chain-of-thought. reasoning_summary must be a short, safe outcome summary.",
+        "Return JSON only with exactly: grade, passed, feedback, mistakes, hint, reasoning_summary.",
+        "grade must be an integer from 0 to 100; passed must equal whether grade is at least 80; mistakes must be an array of concrete strings."
+      ].join(" ")
+    },
+    {
+      role: "user",
+      content: JSON.stringify({
+        assignment: {
+          title: assignment.title,
+          description: assignment.description,
+          skill: assignment.skill,
+          starter_code: assignment.starterCode,
+          tests: assignment.tests
+        },
+        student_code: code
+      })
+    }
+  ];
+}
+
+function parseGrade(content: string): GradeResult {
+  let value: GroqPayload;
+  try {
+    value = JSON.parse(content) as GroqPayload;
+  } catch {
+    throw new GraderError("The LLM grader returned invalid JSON. No grade was saved.", 502);
+  }
+
+  if (!Number.isInteger(value.grade) || value.grade < 0 || value.grade > 100) {
+    throw new GraderError("The LLM grader returned an invalid grade. No grade was saved.", 502);
+  }
+  if (
+    typeof value.feedback !== "string" || !value.feedback.trim() ||
+    !Array.isArray(value.mistakes) || !value.mistakes.every((item) => typeof item === "string") ||
+    typeof value.hint !== "string" || !value.hint.trim() ||
+    typeof value.reasoning_summary !== "string" || !value.reasoning_summary.trim()
+  ) {
+    throw new GraderError("The LLM grader returned an invalid result. No grade was saved.", 502);
+  }
+
+  return {
+    grade: value.grade,
+    passed: value.grade >= 80,
+    feedback: value.feedback.trim().slice(0, 1_000),
+    mistakes: value.mistakes.map((item) => item.trim().slice(0, 300)).filter(Boolean).slice(0, 8),
+    hint: value.hint.trim().slice(0, 600),
+    reasoning_summary: value.reasoning_summary.trim().slice(0, 600),
+    mode: "groq"
+  };
 }
