@@ -1,2 +1,2 @@
-import { NextResponse } from "next/server";import { demoMastery } from "@/lib/data";
-export async function GET(){return NextResponse.json(demoMastery)}
+import { NextResponse } from "next/server";import { createClient } from "@/lib/supabase/server";import { mapMastery } from "@/lib/supabase/mappers";
+export async function GET(){const supabase=await createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return NextResponse.json({error:"Unauthorized"},{status:401});const {data,error}=await supabase.from("student_mastery").select("skill,probability").eq("student_id",user.id);if(error)return NextResponse.json({error:"Unable to load mastery."},{status:500});return NextResponse.json(mapMastery((data??[]).map(row=>({skill:row.skill,probability:Number(row.probability)}))))}

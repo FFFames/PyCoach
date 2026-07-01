@@ -4,7 +4,7 @@ PyCoach is a deployable MVP for practicing Python in the browser. Students work 
 
 ## What is included
 
-- Student and instructor demo roles
+- Real Supabase-authenticated student and instructor demo accounts
 - Five assignments: variables, conditionals, loops, lists, and functions
 - Monaco-based Python editor with loading, error, and feedback states
 - Five documented route handlers under `/api`
@@ -23,7 +23,7 @@ cp .env.example .env.local
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The seeded demo does not require credentials. Use `/login` to choose the student or instructor view.
+Open [http://localhost:3000](http://localhost:3000) and use `/login` to choose the seeded student or instructor account. Both buttons authenticate against Supabase; submissions and mastery changes persist in PostgreSQL.
 
 To verify the project:
 
@@ -46,7 +46,7 @@ Next.js Route Handlers ─────► Isolated Python runner
 Supabase Auth + PostgreSQL
 ```
 
-The repository starts in reviewable demo mode with deterministic sample data. Apply [`supabase/schema.sql`](supabase/schema.sql) and [`supabase/seed.sql`](supabase/seed.sql), then provide the values in [`.env.example`](.env.example) to connect a Supabase project. The schema includes role-aware row-level security: students can submit and read their own records; instructors can monitor the class.
+The deployed assessment is connected to a hosted Supabase project. For a fresh environment, run the migrations in [`supabase/migrations`](supabase/migrations), apply [`supabase/seed.sql`](supabase/seed.sql), then provide the values in [`.env.example`](.env.example). The schema includes role-aware row-level security: students can submit and read their own records; instructors can monitor the class. A signup trigger creates each profile and the five initial mastery rows.
 
 ## Auto-grading approach
 
@@ -95,7 +95,7 @@ Import this repository into Vercel, set the Supabase variables and optional `COD
 
 ## Current MVP limitations
 
-- Demo role selection is used until Supabase project credentials are configured.
+- The assessment exposes two fixed demo accounts; production would add invitation, password reset, and account-management flows.
 - The fallback grader is structural, not semantic.
 - BKT parameters are expert defaults, not fitted to platform data.
 - One skill is mapped to each assignment; production content may require multi-skill tagging and prerequisite constraints.

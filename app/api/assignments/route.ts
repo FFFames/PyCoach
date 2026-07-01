@@ -1,2 +1,2 @@
-import { NextResponse } from "next/server";import { assignments } from "@/lib/data";
-export async function GET(){return NextResponse.json(assignments.map(({tests,...assignment})=>assignment))}
+import { NextResponse } from "next/server";import { createAdminClient } from "@/lib/supabase/admin";import { mapAssignment } from "@/lib/supabase/mappers";
+export async function GET(){const {data,error}=await createAdminClient().from("assignments").select("id,title,description,starter_code,difficulty,skill").order("created_at");if(error)return NextResponse.json({error:"Unable to load assignments."},{status:500});return NextResponse.json((data??[]).map(row=>{const {tests,...assignment}=mapAssignment({...row,tests:[]});return assignment}))}
