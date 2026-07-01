@@ -5,6 +5,7 @@ PyCoach is a deployable MVP for practicing Python in the browser. Students work 
 ## What is included
 
 - Real Supabase-authenticated student and instructor demo accounts
+- Self-service student signup with automatic profile and initial mastery creation
 - Five assignments: variables, conditionals, loops, lists, and functions
 - Monaco-based Python editor with loading, error, and feedback states
 - Five documented route handlers under `/api`
@@ -56,7 +57,7 @@ Next.js Route Handlers ─────► Groq LLM grading
 Supabase Auth + PostgreSQL
 ```
 
-The deployed assessment is connected to a hosted Supabase project. For a fresh environment, run the migrations in [`supabase/migrations`](supabase/migrations), apply [`supabase/seed.sql`](supabase/seed.sql), then provide the values in [`.env.example`](.env.example). The schema includes role-aware row-level security: students can submit and read their own records; instructors can monitor the class. A signup trigger creates each profile and the five initial mastery rows.
+The deployed assessment is connected to a hosted Supabase project. For a fresh environment, run the migrations in [`supabase/migrations`](supabase/migrations), apply [`supabase/seed.sql`](supabase/seed.sql), then provide the values in [`.env.example`](.env.example). The schema includes role-aware row-level security: students can submit and read their own records; instructors can monitor the class. A signup trigger creates each profile and the five initial mastery rows. Public signups are always assigned the student role; instructor access must be granted administratively.
 
 ## Auto-grading approach
 
@@ -109,7 +110,7 @@ Import this repository into Vercel, set the Supabase variables and required `GRO
 
 ## Current MVP limitations
 
-- The assessment exposes two fixed demo accounts; production would add invitation, password reset, and account-management flows.
+- Student self-service signup is available; invitation, password reset, and account-management flows remain future work.
 - LLM grading is probabilistic; production should combine deterministic sandbox tests with LLM explanations.
 - BKT parameters are expert defaults, not fitted to platform data.
 - One skill is mapped to each assignment; production content may require multi-skill tagging and prerequisite constraints.
