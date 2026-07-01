@@ -77,10 +77,42 @@ describe("Groq grader", () => {
 
   it("rejects invalid model JSON instead of silently passing", async () => {
     vi.stubEnv("GROQ_API_KEY", "test-key");
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({
       choices: [{ message: { content: "not-json" } }]
     }), { status: 200 })));
+    vi.stubGlobal("fetch", fetchMock);
     await expect(gradeCode("print(1)", assignment)).rejects.toThrow("invalid JSON");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("retries once when Groq returns an invalid result shape", async () => {
+    vi.stubEnv("GROQ_API_KEY", "test-key");
+    const invalidResult = JSON.stringify({
+      grade: 10,
+      passed: false,
+      feedback: "The code has an unclosed parenthesis.",
+      mistakes: "Missing closing parenthesis",
+      hint: "Close the print call.",
+      reasoning_summary: "The code cannot run."
+    });
+    const validResult = JSON.stringify({
+      grade: 10,
+      passed: false,
+      feedback: "The code has an unclosed parenthesis.",
+      mistakes: ["The print call is missing its closing parenthesis."],
+      hint: "Close the print call with a parenthesis.",
+      reasoning_summary: "The syntax error prevents the submission from running."
+    });
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: invalidResult } }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ choices: [{ message: { content: validResult } }] }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await gradeCode('print("15"', assignment);
+    expect(result).toMatchObject({ grade: 10, passed: false });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const retryRequest = JSON.parse(fetchMock.mock.calls[1][1].body as string);
+    expect(retryRequest.messages.at(-1).content).toContain("failed the required JSON schema");
   });
 
   it("blocks dangerous APIs before calling Groq", async () => {

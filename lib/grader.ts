@@ -27,6 +27,14 @@ export class GraderError extends Error {
 }
 
 type GroqPayload = Omit<GradeResult, "mode" | "passed"> & { passed?: unknown };
+type GroqMessage = { role: "system" | "user"; content: string };
+
+class GraderOutputError extends GraderError {
+  constructor(message: string) {
+    super(message, 502);
+    this.name = "GraderOutputError";
+  }
+}
 
 export async function gradeCode(code: string, assignment: GradingAssignment): Promise<GradeResult> {
   validateCode(code);
@@ -38,6 +46,23 @@ export async function gradeCode(code: string, assignment: GradingAssignment): Pr
     );
   }
 
+  const messages = buildMessages(code, assignment);
+  try {
+    return parseGrade(await requestCompletion(apiKey, messages));
+  } catch (error) {
+    if (!(error instanceof GraderOutputError)) throw error;
+  }
+
+  return parseGrade(await requestCompletion(apiKey, [
+    ...messages,
+    {
+      role: "user",
+      content: "Your previous response failed the required JSON schema. Re-evaluate the same current submission and return exactly one valid JSON object. grade must be an integer, passed a boolean, feedback/hint/reasoning_summary non-empty strings, and mistakes an array of strings. Do not use null, markdown, or code fences."
+    }
+  ]));
+}
+
+async function requestCompletion(apiKey: string, messages: GroqMessage[]): Promise<string> {
   let response: Response;
   try {
     response = await fetch(GROQ_ENDPOINT, {
@@ -51,7 +76,7 @@ export async function gradeCode(code: string, assignment: GradingAssignment): Pr
         temperature: 0,
         max_completion_tokens: 700,
         response_format: { type: "json_object" },
-        messages: buildMessages(code, assignment)
+        messages
       }),
       signal: AbortSignal.timeout(12_000)
     });
@@ -67,8 +92,8 @@ export async function gradeCode(code: string, assignment: GradingAssignment): Pr
     choices?: Array<{ message?: { content?: string } }>;
   };
   const content = completion.choices?.[0]?.message?.content;
-  if (!content) throw new GraderError("The LLM grader returned an empty response.", 502);
-  return parseGrade(content);
+  if (!content) throw new GraderOutputError("The LLM grader returned an empty response.");
+  return content;
 }
 
 export function formatStoredFeedback(result: GradeResult): string {
@@ -89,7 +114,7 @@ function validateCode(code: string) {
   }
 }
 
-function buildMessages(code: string, assignment: GradingAssignment) {
+function buildMessages(code: string, assignment: GradingAssignment): GroqMessage[] {
   return [
     {
       role: "system",
@@ -105,7 +130,8 @@ function buildMessages(code: string, assignment: GradingAssignment) {
         "Do not provide full solution code. Give a useful hint without revealing the complete answer.",
         "Do not reveal hidden chain-of-thought. reasoning_summary must be a short, safe outcome summary.",
         "Return JSON only with exactly: grade, passed, feedback, mistakes, hint, reasoning_summary.",
-        "grade must be an integer from 0 to 100; passed must equal whether grade is at least 80; mistakes must be an array of concrete strings."
+        "grade must be an integer from 0 to 100; passed must equal whether grade is at least 80; mistakes must always be a JSON array of concrete strings.",
+        "feedback, hint, and reasoning_summary must always be non-empty JSON strings, including for code with syntax errors. Never return null, markdown, or code fences."
       ].join(" ")
     },
     {
@@ -132,11 +158,11 @@ function parseGrade(content: string): GradeResult {
   try {
     value = JSON.parse(content) as GroqPayload;
   } catch {
-    throw new GraderError("The LLM grader returned invalid JSON. No grade was saved.", 502);
+    throw new GraderOutputError("The LLM grader returned invalid JSON. No grade was saved.");
   }
 
   if (!Number.isInteger(value.grade) || value.grade < 0 || value.grade > 100) {
-    throw new GraderError("The LLM grader returned an invalid grade. No grade was saved.", 502);
+    throw new GraderOutputError("The LLM grader returned an invalid grade. No grade was saved.");
   }
   if (
     typeof value.feedback !== "string" || !value.feedback.trim() ||
@@ -144,7 +170,7 @@ function parseGrade(content: string): GradeResult {
     typeof value.hint !== "string" || !value.hint.trim() ||
     typeof value.reasoning_summary !== "string" || !value.reasoning_summary.trim()
   ) {
-    throw new GraderError("The LLM grader returned an invalid result. No grade was saved.", 502);
+    throw new GraderOutputError("The LLM grader returned an invalid result. No grade was saved.");
   }
 
   return {
