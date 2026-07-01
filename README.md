@@ -9,7 +9,9 @@ PyCoach is a deployable MVP for practicing Python in the browser. Students work 
 
 ## Screenshots
 
+<img width="663" height="879" alt="image" src="https://github.com/user-attachments/assets/dca081bd-137b-4972-92a7-9d9f224e7784" />
 
+<img width="706" height="848" alt="image" src="https://github.com/user-attachments/assets/117ebb8c-6d8a-4d73-b9e6-cbf42a748178" />
 
 <img width="1402" height="905" alt="2569-07-02_00-54-07" src="https://github.com/user-attachments/assets/9ddd9846-69dd-4da3-8068-fc9fa3ce39a6" />
 <img width="1333" height="641" alt="image" src="https://github.com/user-attachments/assets/f6fae681-106c-439f-b925-84a7c052ae8e" />
@@ -136,8 +138,8 @@ For every learning opportunity, collect: anonymized student ID; assignment and s
 
 ### Research basis
 
-- Corbett, A. T., & Anderson, J. R. (1995). “Knowledge Tracing: Modeling the Acquisition of Procedural Knowledge.” *User Modeling and User-Adapted Interaction, 4*, 253–278. [doi:10.1007/BF01099821](https://doi.org/10.1007/BF01099821)
-- Pardos, Z. A., & Heffernan, N. T. (2010). “Modeling Individualization in a Bayesian Networks Implementation of Knowledge Tracing.” *UMAP 2010*, 255–266. [Publication page](https://www.ischool.berkeley.edu/research/publications/2010/modeling-individualization-bayesian-networks-implementation-knowledge)
+- Corbett, A. T., & Anderson, J. R. (1995). “Knowledge Tracing: Modeling the Acquisition of Procedural Knowledge.” *User Modeling and User-Adapted Interaction, 4*, 253–278. [Open PDF](https://act-r.psy.cmu.edu/wordpress/wp-content/uploads/2012/12/893CorbettAnderson1995.pdf)
+- Pardos, Z. A., & Heffernan, N. T. (2010). “Modeling Individualization in a Bayesian Networks Implementation of Knowledge Tracing.” *UMAP 2010*, 255–266. [Open PDF](https://web.cs.wpi.edu/~nth/pubs_and_grants/papers/2010/PardosUser%20Modeling2010.pdf)
 - Piech, C. et al. (2015). “Deep Knowledge Tracing.” *NeurIPS 2015*. [arXiv:1506.05908](https://arxiv.org/abs/1506.05908)
 
 Corbett and Anderson establish the classic latent mastery model. Pardos and Heffernan show why learner- and skill-specific parameters are a meaningful extension once sufficient data exists. Piech et al. provide the deep sequential alternative; it is deliberately not used here because the assessment timeframe cannot produce the large interaction dataset needed to justify it.
