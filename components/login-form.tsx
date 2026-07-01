@@ -4,22 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-
-const DEMOS = {
-  student: { email: "student@pycoach.demo", password: "PyCoachDemo!2026" },
-  instructor: { email: "instructor@pycoach.demo", password: "PyCoachDemo!2026" }
-} as const;
+import { DEMO_ACCOUNTS } from "@/lib/demo-accounts";
 
 export function LoginForm() {
   const router = useRouter();
-  const [loading, setLoading] = useState<keyof typeof DEMOS | null>(null);
+  const [loading, setLoading] = useState<keyof typeof DEMO_ACCOUNTS | null>(null);
   const [error, setError] = useState("");
 
-  async function signIn(role: keyof typeof DEMOS) {
+  async function signIn(role: keyof typeof DEMO_ACCOUNTS) {
     setLoading(role);
     setError("");
     const supabase = createClient();
-    const { error: authError } = await supabase.auth.signInWithPassword(DEMOS[role]);
+    const { error: authError } = await supabase.auth.signInWithPassword(DEMO_ACCOUNTS[role]);
     if (authError) {
       setError(authError.message);
       setLoading(null);
