@@ -5,7 +5,6 @@ PyCoach is a deployable MVP for practicing Python in the browser. Students work 
 ## Demo
 
 - Live app: [https://pycoach.vercel.app](https://pycoach.vercel.app)
-- Demo video: `<add demo video URL>`
 - Repository: [https://github.com/FFFames/PyCoach](https://github.com/FFFames/PyCoach)
 
 ## Screenshots
