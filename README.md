@@ -109,7 +109,7 @@ app/          Next.js App Router pages and API route handlers
 components/   Shared UI components
 lib/          BKT, grading, recommendation, and Supabase mapping logic
 supabase/     Schema, migrations, and seed data
-docs/         Assessment documentation and screenshots
+slides/       Slide deck source, assets, and rendered presentation support files
 ```
 
 ## Key design decisions
