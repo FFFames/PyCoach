@@ -9,30 +9,37 @@ PyCoach is a deployable MVP for practicing Python in the browser. Students work 
 
 ## Screenshots
 
-Student dashboard
+- Student log-in
 
 <img width="663" height="879" alt="image" src="https://github.com/user-attachments/assets/dca081bd-137b-4972-92a7-9d9f224e7784" />
 
-Returning student login and student signup
+- Student sign-up and Demo accounts
 
 <img width="706" height="848" alt="image" src="https://github.com/user-attachments/assets/117ebb8c-6d8a-4d73-b9e6-cbf42a748178" />
 
-Assignment grading
+- Student dashboard 
 
 <img width="1402" height="905" alt="2569-07-02_00-54-07" src="https://github.com/user-attachments/assets/9ddd9846-69dd-4da3-8068-fc9fa3ce39a6" />
+
+- Assignment 
 <img width="1333" height="641" alt="image" src="https://github.com/user-attachments/assets/f6fae681-106c-439f-b925-84a7c052ae8e" />
 
-Mastery and recommendation
 
+- Mastery and recommendation (Passed)
+  
 <img width="1425" height="931" alt="image" src="https://github.com/user-attachments/assets/a6c04763-3890-4f53-baf7-820c577afc6b" />
+- Syntax Error
+  
 <img width="1302" height="703" alt="2569-07-02_01-02-12" src="https://github.com/user-attachments/assets/0f529cd2-b920-40a0-abc7-75892aa55f11" />
+- Mastery and recommendation (Failed)
+  
 <img width="1292" height="934" alt="image" src="https://github.com/user-attachments/assets/4164ae14-d5f0-45b5-bc0e-b1c5ee5ae280" />
 
-Instructor dashboard
+- Instructor dashboard
 
 <img width="1312" height="791" alt="image" src="https://github.com/user-attachments/assets/3bf0a590-ca02-4e9d-8be0-e0500686a771" />
 
-Student detail view
+- Student detail view
 
 <img width="1297" height="933" alt="image" src="https://github.com/user-attachments/assets/3d237b0e-f5ca-4c2f-b6fa-98e163bba5d2" />
 
