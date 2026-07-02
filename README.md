@@ -117,6 +117,7 @@ docs/         Assessment documentation and screenshots
 - Next.js App Router keeps the UI, authenticated pages, and server-side grading endpoints in one deployable codebase with straightforward route-level ownership.
 - Supabase provides managed Auth, PostgreSQL, and row-level security, which keeps the MVP focused on learning and grading flows instead of custom account infrastructure.
 - Groq LLM grading matches the assessment allowance for LLM-based auto-grading and makes it feasible to ship structured feedback within a short MVP timeline.
+- Groq's OpenAI-compatible API keeps the grading integration simple, while its low-latency inference is a practical fit for an MVP that should return feedback quickly after each submission.
 - BKT is used instead of Deep Knowledge Tracing because this project has a tiny interaction dataset, short learning sequences, and a strong need for interpretable mastery updates.
 - LLM-only grading is acceptable for the MVP, but production should combine deterministic sandbox execution with LLM explanations so scoring is verifiable and feedback remains helpful.
 
@@ -126,7 +127,7 @@ docs/         Assessment documentation and screenshots
 
 Reference solutions and hidden tests are readable only through the server-side service-role grading path. They are excluded from student-facing assignment queries and are never sent to the browser.
 
-Groq LLM grading is the MVP's primary and required grader. This follows the assessment's explicit option to use an LLM provider for automated grading and intelligent feedback. The current prompt also asks the model to report both structural issues, such as syntax or indentation mistakes, and missing required logic when both are present. If `GROQ_API_KEY` is absent, grading fails clearly instead of falling back to regex checks.
+Groq LLM grading is the MVP's primary and required grader. This follows the assessment's explicit option to use an LLM provider for automated grading and intelligent feedback. The current prompt also asks the model to report both structural issues, such as syntax or indentation mistakes, and missing required logic when both are present. The default model is `llama-3.1-8b-instant` because it is fast, inexpensive, and good enough for structured JSON grading in a small MVP; the tradeoff is that smaller models can miss completeness or reasoning nuances more often than larger models. If `GROQ_API_KEY` is absent, grading fails clearly instead of falling back to regex checks.
 
 The Vercel application does not execute arbitrary Python. Even with stronger test, rubric, and reference context, LLM grading remains probabilistic and can occasionally misjudge semantics. A production upgrade should be hybrid: execute tests deterministically in short-lived, network-disabled containers or microVMs such as E2B or Firecracker, then use the LLM to explain the verified results and provide personalized guidance.
 
